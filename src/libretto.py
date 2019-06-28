@@ -30,6 +30,7 @@ class LineType:
     LYRIC = 5
     EMOTE = 6
     BLANK = 8
+    MAX = BLANK
 
     @classmethod
     def toStr(classType, lineType):
@@ -70,9 +71,6 @@ class Track:
         self.lines = []
         self.subtracks = []
         self.parent = None
-
-    def setTrackNo(self, trackNo):
-        self.trackNo = trackNo
 
     def setLength(self, min, sec):
         self.length = datetime.timedelta(minutes=min, seconds=sec)
