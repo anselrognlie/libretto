@@ -1,4 +1,5 @@
 # libretto
+
 Scripts to create an HTML autoscrolling web page for opera libretti
 
 This project was created for an opera listening party so that we could all have the libretto displayed

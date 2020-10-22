@@ -1,49 +1,50 @@
-#!/usr/local/bin/python3
-
-import sys
-sys.path.append('../src')
+# pylint: disable=missing-module-docstring
 
 import unittest
-from libretto import Track
-from libretto import Line
-from libretto import LineType
+from src.libretto import Track
+from src.libretto import Line
+from src.libretto import LineType
 
 class TestTrack(unittest.TestCase):
-  
-  def test_TrackInitialization(self):
-    track = Track(1, 2, 3)
-    length = track.length
+    # pylint: disable=missing-class-docstring
 
-    assert track.trackNo == 1, "unexpected track number"
-    assert length.days == 0, "unexpected days"
-    assert length.seconds == 123, "unexpected seconds"
-    assert length.microseconds == 0, "unexpected microseconds"
-    assert len(track.lines) == 0, "should have no lines"
-  
-  def test_TrackSetLength(self):
-    track = Track()
-    track.setLength(2, 3)
-    length = track.length
+    def test_track_initialization(self):
+        # pylint: disable=missing-function-docstring, no-self-use
+        track = Track(1, 2, 3)
+        length = track.length
 
-    assert track.trackNo == 0, "unexpected track number"
-    assert length.days == 0, "unexpected days"
-    assert length.seconds == 123, "unexpected seconds"
-    assert length.microseconds == 0, "unexpected microseconds"
-    assert len(track.lines) == 0, "should have no lines"
+        assert track.trackNo == 1, "unexpected track number"
+        assert length.days == 0, "unexpected days"
+        assert length.seconds == 123, "unexpected seconds"
+        assert length.microseconds == 0, "unexpected microseconds"
+        assert len(track.lines) == 0, "should have no lines"
 
-  def test_TrackAddLine(self):
-    track = Track()
-    line = Line(LineType.SCENE, "text", "subtext")
-    track.addLine(line)
+    def test_track_set_length(self):
+        # pylint: disable=missing-function-docstring, no-self-use
+        track = Track()
+        track.setLength(2, 3)
+        length = track.length
 
-    assert track.trackNo == 0, "unexpected track number"
-    assert len(track.lines) == 1, "should have no lines"
+        assert track.trackNo == 0, "unexpected track number"
+        assert length.days == 0, "unexpected days"
+        assert length.seconds == 123, "unexpected seconds"
+        assert length.microseconds == 0, "unexpected microseconds"
+        assert len(track.lines) == 0, "should have no lines"
 
-    storedLine = track.lines[0]
+    def test_track_add_line(self):
+        # pylint: disable=missing-function-docstring, no-self-use
+        track = Track()
+        line = Line(LineType.SCENE, "text", "subtext")
+        track.addLine(line)
 
-    assert storedLine.type == LineType.SCENE, "type mismatch"
-    assert storedLine.text == "text", "text mismatch"
-    assert storedLine.subtext == "subtext", "subtext mismatch"
+        assert track.trackNo == 0, "unexpected track number"
+        assert len(track.lines) == 1, "should have no lines"
+
+        stored_line = track.lines[0]
+
+        assert stored_line.type == LineType.SCENE, "type mismatch"
+        assert stored_line.text == "text", "text mismatch"
+        assert stored_line.subtext == "subtext", "subtext mismatch"
 
 if __name__ == '__main__':
-  unittest.main()
+    unittest.main()
