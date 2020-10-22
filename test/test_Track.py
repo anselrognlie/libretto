@@ -13,7 +13,7 @@ class TestTrack(unittest.TestCase):
         track = Track(1, 2, 3)
         length = track.length
 
-        assert track.trackNo == 1, "unexpected track number"
+        assert track.track_number == 1, "unexpected track number"
         assert length.days == 0, "unexpected days"
         assert length.seconds == 123, "unexpected seconds"
         assert length.microseconds == 0, "unexpected microseconds"
@@ -22,10 +22,10 @@ class TestTrack(unittest.TestCase):
     def test_track_set_length(self):
         # pylint: disable=missing-function-docstring, no-self-use
         track = Track()
-        track.setLength(2, 3)
+        track.set_length(2, 3)
         length = track.length
 
-        assert track.trackNo == 0, "unexpected track number"
+        assert track.track_number == 0, "unexpected track number"
         assert length.days == 0, "unexpected days"
         assert length.seconds == 123, "unexpected seconds"
         assert length.microseconds == 0, "unexpected microseconds"
@@ -35,9 +35,9 @@ class TestTrack(unittest.TestCase):
         # pylint: disable=missing-function-docstring, no-self-use
         track = Track()
         line = Line(LineType.SCENE, "text", "subtext")
-        track.addLine(line)
+        track.add_line(line)
 
-        assert track.trackNo == 0, "unexpected track number"
+        assert track.track_number == 0, "unexpected track number"
         assert len(track.lines) == 1, "should have no lines"
 
         stored_line = track.lines[0]

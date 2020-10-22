@@ -1,26 +1,33 @@
-#!/usr/local/bin/python3
+# pylint: disable=missing-module-docstring, too-many-lines
 
-from libretto import LibrettoLoader
-from libretto import LineType
-#from libretto import LibrettoPrinter
 import datetime
+import sys
+import os
+import re
+
+from src.libretto import LibrettoLoader
+from src.libretto import LineType
+from src.libretto import Track
 
 BIN=None
 
 class SideBySideMode:
+    # pylint: disable=missing-class-docstring, too-few-public-methods
     NONE = 0
-    START =1    
+    START =1
     END = 2
     MIDDLE = 3
 
 class Duration:
+    # pylint: disable=missing-class-docstring, too-few-public-methods
     def __init__(self):
         self.hour = 0
         self.min = 0
         self.sec = 0
 
     @classmethod
-    def fromTimeDelta(type, delta):
+    def from_time_delta(cls, delta):
+        # pylint: disable=missing-function-docstring
         dur = Duration()
 
         dur.sec = int(delta) % 60
@@ -31,38 +38,43 @@ class Duration:
         return dur
 
 class Libretto2Html:
-    def __init__(self, srcFileName):
-        self.linePrinterTable = {
-            LineType.SCENE: self.printSCENE,
-            LineType.SDETAILS: self.printSDETAILS,
-            LineType.STAGING: self.printSTAGING,
-            LineType.CHARACTER: self.printCHARACTER,
-            LineType.LYRIC: self.printLYRIC,
-            LineType.EMOTE: self.printEMOTE,
-            LineType.BLANK: self.printBLANK,
+    # pylint: disable=missing-class-docstring
+    def __init__(self, source_file_name):
+        self.line_printer_table = {
+            LineType.SCENE: self.print_scene,
+            LineType.SDETAILS: self.print_sdetails,
+            LineType.STAGING: self.print_staging,
+            LineType.CHARACTER: self.print_character,
+            LineType.LYRIC: self.print_lyric,
+            LineType.EMOTE: self.print_emote,
+            LineType.BLANK: self.print_blank,
         }
 
-        self.lineQueue = None
-        self.sbsMode = SideBySideMode.NONE
-        self.linesSinceBlank = 9999
-        self.srcFileName = srcFileName
+        self.line_queue = None
+        self.sbs_mode = SideBySideMode.NONE
+        self.lines_since_blank = 9999
+        self.source_file_name = source_file_name
 
-    def printSCENE(self, line):
+    def print_scene(self, line):
+        # pylint: disable=missing-function-docstring, no-self-use
         print(f"<h1>{line.text}</h1>")
 
-    def printSDETAILS(self, line):
+    def print_sdetails(self, line):
+        # pylint: disable=missing-function-docstring, no-self-use
         print(f"<h2>{line.text}</h2>")
 
-    def printBLANK(self, line):
+    def print_blank(self, _line):
+        # pylint: disable=missing-function-docstring, no-self-use
         print("<p class='blank'></p>")
 
-    def printSTAGING(self, line):
+    def print_staging(self, line):
+        # pylint: disable=missing-function-docstring, no-self-use
         print(f"<p class='staging'>{line.text}</p>")
 
-    def printCHARACTER(self, line):
+    def print_character(self, line):
+        # pylint: disable=missing-function-docstring, no-self-use
         subtext = line.subtext
         if subtext is not None:
-            import re
             subtext = re.sub(r"^with above(, )?", "", subtext)
             if subtext == "":
                 subtext = None
@@ -74,132 +86,139 @@ class Libretto2Html:
         else:
             print(f"<p class='character'>{line.text}:</p>")
 
-    def printLYRIC(self, line):
+    def print_lyric(self, line):
+        # pylint: disable=missing-function-docstring, no-self-use
         print(f"<p class='lyric'>{line.text}</p>")
 
-    def printEMOTE(self, line):
+    def print_emote(self, line):
+        # pylint: disable=missing-function-docstring, no-self-use
         print(f"<p class='emote'>[{line.text}]</p>")
 
-    def printGENERIC(self, line):
+    def print_generic(self, line):
+        # pylint: disable=missing-function-docstring, no-self-use
         print(f"<p>{line.text}</p>")
 
-    def getSideBySideMode(self, line):
-        import re
-
+    def get_side_by_side_mode(self, line):
+        # pylint: disable=missing-function-docstring, no-self-use
         if (line.subtext is not None and
             re.search(r"^with above", line.subtext) is not None):
             return SideBySideMode.END
 
         return SideBySideMode.NONE
 
-    def emitQueue(self):
-        if self.lineQueue is not None:
-            self.printLines(self.lineQueue)
+    def emit_queue(self):
+        # pylint: disable=missing-function-docstring
+        if self.line_queue is not None:
+            self.print_lines(self.line_queue)
 
-        self.lineQueue = None
+        self.line_queue = None
 
         # if we just emitted the start of a sbs, switch mode to end
         # otherwise, the mode should become none
 
-        if (self.sbsMode == SideBySideMode.START or
-            self.sbsMode == SideBySideMode.MIDDLE):
-            self.sbsMode = SideBySideMode.END
+        if (self.sbs_mode == SideBySideMode.START or
+            self.sbs_mode == SideBySideMode.MIDDLE):
+            self.sbs_mode = SideBySideMode.END
         else:
-            self.sbsMode = SideBySideMode.NONE
+            self.sbs_mode = SideBySideMode.NONE
 
-    def printLines(self, lines):
-        if self.sbsMode == SideBySideMode.START:
+    def print_lines(self, lines):
+        # pylint: disable=missing-function-docstring
+        if self.sbs_mode == SideBySideMode.START:
             print("""
                 <div class="side-by-side">
                 <div>
             """)
-        elif self.sbsMode == SideBySideMode.MIDDLE:
+        elif self.sbs_mode == SideBySideMode.MIDDLE:
             print("<div>")
-        elif self.sbsMode == SideBySideMode.END:
+        elif self.sbs_mode == SideBySideMode.END:
             print("<div>")
 
-        for l in lines:
-            self.printLine(l)
+        for line in lines:
+            self.print_line(line)
 
-        if self.sbsMode == SideBySideMode.START:
+        if self.sbs_mode == SideBySideMode.START:
             print("</div>")
-        elif self.sbsMode == SideBySideMode.MIDDLE:
+        elif self.sbs_mode == SideBySideMode.MIDDLE:
             print("</div>")
-        elif self.sbsMode == SideBySideMode.END:
+        elif self.sbs_mode == SideBySideMode.END:
             print("""
                 </div>
                 </div>
             """)
 
-    def enqueueLine(self, line):
-        if self.lineQueue is None:
-            self.lineQueue = []
+    def enqueue_line(self, line):
+        # pylint: disable=missing-function-docstring
+        if self.line_queue is None:
+            self.line_queue = []
 
-        self.lineQueue.append(line)
+        self.line_queue.append(line)
 
-    def printLine(self, line):
-        printer = self.linePrinterTable.get(line.type, self.printGENERIC)
+    def print_line(self, line):
+        # pylint: disable=missing-function-docstring
+        printer = self.line_printer_table.get(line.type, self.print_generic)
         printer(line)
 
-    def haltsQueue(self, lineType):
-        return (lineType == LineType.STAGING or
-            lineType == LineType.SDETAILS or
-            lineType == LineType.SCENE)
+    def halts_queue(self, line_type):
+        # pylint: disable=missing-function-docstring, no-self-use
+        return line_type in (LineType.STAGING, LineType.SDETAILS, LineType.SCENE)
 
-    def generateTrackDetails(self, info, track):
+    def generate_track_details(self, info, track):
+        # pylint: disable=missing-function-docstring, no-self-use
         time = track.length
-        trackId = track.trackNo
-        dur = Duration.fromTimeDelta(time.seconds)
-        info.append(f"""new TrackInfo("{trackId}", """ +
+        track_id = track.track_number
+        dur = Duration.from_time_delta(time.seconds)
+        info.append(f"""new TrackInfo("{track_id}", """ +
             f"new Duration({dur.hour}, {dur.min}, {dur.sec})),")
 
-    def generateDivDetails(self, info, track):
-        from libretto import Track
-
+    def generate_div_details(self, info, track):
+        # pylint: disable=missing-function-docstring, no-self-use
         time = track.length
-        totalSec = time.seconds
+        total_seconds = time.seconds
 
         # reinterpret durations as start times
-        trackAndSubs = [ Track(track.trackNo) ]
-        for t in track.subtracks:
-            trackAndSubs.append(Track(t.trackNo, sec=t.length.seconds))
+        track_and_subtracks = [ Track(track.track_number) ]
+        for subtrack in track.subtracks:
+            track_and_subtracks.append(Track(subtrack.track_number,
+                seconds=subtrack.length.seconds))
 
         # determine durations of track entry points
-        for i in range(len(trackAndSubs) - 1):
-            currTrack = trackAndSubs[i]
-            currStart = currTrack.length.seconds
-            trackId = currTrack.trackNo
-            nextTrack = trackAndSubs[i + 1]
-            nextStart = nextTrack.length.seconds
-            secDelta = nextStart - currStart
-            totalSec -= secDelta
-            dur = Duration.fromTimeDelta(secDelta)
+        for i in range(len(track_and_subtracks) - 1):
+            current_track = track_and_subtracks[i]
+            current_start = current_track.length.seconds
+            track_id = current_track.track_number
+            next_track = track_and_subtracks[i + 1]
+            next_start = next_track.length.seconds
+            seconds_delta = next_start - current_start
+            total_seconds -= seconds_delta
+            dur = Duration.from_time_delta(seconds_delta)
 
-            info.append(f"""new TrackInfo("{trackId}", """ +
+            info.append(f"""new TrackInfo("{track_id}", """ +
                 f"new Duration({dur.hour}, {dur.min}, {dur.sec})),")
 
         # this is the last track, so use whatever time is left for this track
-        currTrack = trackAndSubs[len(trackAndSubs) - 1]
-        trackId = currTrack.trackNo
-        dur = Duration.fromTimeDelta(totalSec)
-        info.append(f"""new TrackInfo("{trackId}", """ +
+        current_track = track_and_subtracks[len(track_and_subtracks) - 1]
+        track_id = current_track.track_number
+        dur = Duration.from_time_delta(total_seconds)
+        info.append(f"""new TrackInfo("{track_id}", """ +
             f"new Duration({dur.hour}, {dur.min}, {dur.sec})),")
 
     def print(self, libretto):
-        totalTime = datetime.timedelta()
+        # pylint: disable=missing-function-docstring
+        total_time = datetime.timedelta()
 
         # generate the track info to inject into the template
-        trackInfo = []
-        for t in libretto.tracks:
-            self.generateTrackDetails(trackInfo, t)
+        track_info = []
+        for track in libretto.tracks:
+            self.generate_track_details(track_info, track)
 
-        infoStr = "\n".join(trackInfo)
+        info_str = "\n".join(track_info)
 
-        divInfo = []
-        for t in libretto.tracks:
-            self.generateDivDetails(divInfo, t)
+        div_info = []
+        for track in libretto.tracks:
+            self.generate_div_details(div_info, track)
 
-        divInfoStr = "\n".join(divInfo)
+        div_info_str = "\n".join(div_info)
 
         print("<html><head>")
         print(f"""
@@ -325,7 +344,7 @@ function Transport() {{
         this.ticks = 0;
         this.track = "1"
         this.tracks = { len(libretto.tracks) };
-        this.keyPrefix = "{ self.srcFileName }";
+        this.keyPrefix = "{ self.source_file_name }";
         this.playTimer = null;
         this.trackTotal = null;
         this.ticksTotal = 0;
@@ -348,11 +367,11 @@ function Transport() {{
         this.events = {{}};
 
         this.trackList = [
-        { infoStr }
+        { info_str }
         ];
 
         this.allDivs = [
-        { divInfoStr }
+        { div_info_str }
         ];
 
         trackTotal = new Duration(0, 0, 0);
@@ -373,8 +392,6 @@ Transport.prototype = {{
     init: function() {{
         var self = this;
 
-        this.initWakeLock();
-
         this.body = document.getElementsByTagName("body")[0];
         this.transportEl = document.getElementById("transport");
         this.controlsEl = this.transportEl.getElementsByClassName("controls")[0];
@@ -390,6 +407,8 @@ Transport.prototype = {{
         this.statusEl = this.transportEl.getElementsByClassName("status")[0];
         this.sliderEl = this.transportEl.getElementsByClassName("slider")[0];
         this.sliderTrackEl = this.transportEl.getElementsByClassName("sliderTrack")[0];
+
+        this.initWakeLock();
 
         this.transportEl.addEventListener("mouseover", function(event) {{
             return self.onTransportOver(event);
@@ -431,20 +450,25 @@ Transport.prototype = {{
 
     initWakeLock: function() {{
         self = this;
-
-        navigator.getWakeLock("screen").then((wlObj) => {{
-            self.wakelock = wlObj;
-
-            console.log("init wakelock");
-
-            if (self.shouldLock) {{
-                self.getNewLockRequest();
-            }}
-        }})
-        .catch((e) => {{
+        onerror = () => {{
             console.log("init wakelock failed");
             self.body.style.cursor = "not-allowed";
-        }});
+        }}
+
+        if (navigator.getWakeLock) {{
+            navigator.getWakeLock("screen").then((wlObj) => {{
+                self.wakelock = wlObj;
+
+                console.log("init wakelock");
+
+                if (self.shouldLock) {{
+                    self.getNewLockRequest();
+                }}
+            }})
+            .catch(e => onerror());
+        }} else {{
+            onerror();
+        }}
     }},
 
     reloadTicks: function() {{
@@ -850,7 +874,7 @@ Transport.prototype = {{
 
     play: function() {{
         var self = this;
-        
+
         console.log("play");
         if (! this.playTimer) {{
 
@@ -1255,11 +1279,11 @@ Time:
 <div class="scroll-buffer">&nbsp;</div>
                 """)
 
-        self.linesSinceBlank = 9999
+        self.lines_since_blank = 9999
 
-        for t in libretto.tracks:
-            totalTime += t.length
-            self.printTrackLines(t)
+        for track in libretto.tracks:
+            total_time += track.length
+            self.print_track_lines(track)
         print("""
 <div class="scroll-buffer">&nbsp;</div>
 </div>
@@ -1267,54 +1291,56 @@ Time:
 </body></html>
         """)
 
-    def printTrackLines(self, track):
-        print(f"<div id='{track.trackNo}' class='track'>")
+    def print_track_lines(self, track):
+        # pylint: disable=missing-function-docstring
+        print(f"<div id='{track.track_number}' class='track'>")
 
-        for l in track.lines:
-            self.linesSinceBlank += 1
+        for line in track.lines:
+            self.lines_since_blank += 1
 
-            lineType = l.type
+            line_type = line.type
 
-            if lineType == LineType.CHARACTER:
+            if line_type == LineType.CHARACTER:
                 # emit any queued lines, using the new character line to
                 # set the side by side mode
-                sbsMode = self.getSideBySideMode(l)
-                if sbsMode == SideBySideMode.END:
+                sbs_mode = self.get_side_by_side_mode(line)
+                if sbs_mode == SideBySideMode.END:
                     # the queued lines must be a side by side start
-                    if self.sbsMode == SideBySideMode.NONE:
-                        self.sbsMode = SideBySideMode.START
+                    if self.sbs_mode == SideBySideMode.NONE:
+                        self.sbs_mode = SideBySideMode.START
                     else:
-                        self.sbsMode = SideBySideMode.MIDDLE
+                        self.sbs_mode = SideBySideMode.MIDDLE
 
-                self.emitQueue()
+                self.emit_queue()
 
-                self.enqueueLine(l)
-            elif lineType == LineType.BLANK:
-                self.linesSinceBlank = 0
-                self.enqueueLine(l)
-            elif lineType == LineType.EMOTE:
+                self.enqueue_line(line)
+            elif line_type == LineType.BLANK:
+                self.lines_since_blank = 0
+                self.enqueue_line(line)
+            elif line_type == LineType.EMOTE:
                 # if this followed a blank, then end the queue, otherwise
                 # just enqueue
-                if self.linesSinceBlank == 1:
-                    self.emitQueue()
-                self.enqueueLine(l)
-            elif self.haltsQueue(lineType):
-                self.emitQueue()
-                self.enqueueLine(l)
+                if self.lines_since_blank == 1:
+                    self.emit_queue()
+                self.enqueue_line(line)
+            elif self.halts_queue(line_type):
+                self.emit_queue()
+                self.enqueue_line(line)
             else:
-                self.enqueueLine(l)
+                self.enqueue_line(line)
 
-        self.emitQueue()
+        self.emit_queue()
         print("</div>")
 
-        for t in track.subtracks:
-            self.printTrackLines(t)
+        for subtrack in track.subtracks:
+            self.print_track_lines(subtrack)
 
 def usage():
+    # pylint: disable=missing-function-docstring
     print(f"usage: {BIN} <libretto_file>")
 
 def main(argv):
-
+    # pylint: disable=missing-function-docstring
     if len(argv) < 1:
         usage()
         return 1
@@ -1324,7 +1350,8 @@ def main(argv):
     libretto = loader.load(file)
 
     if loader.error:
-        print(f"Error at line {loader.errorLineNo}[{loader.errorMsg}]:{loader.errorLine}")
+        print(f"Error at line {loader.error_line_number}" +
+            f"[{loader.error_message}]:{loader.error_line}")
 
     printer = Libretto2Html(file)
     printer.print(libretto)
@@ -1332,7 +1359,5 @@ def main(argv):
     return 0
 
 if __name__ == '__main__':
-    import sys, os
-    #breakpoint()
     BIN = os.path.basename(sys.argv[0])
     sys.exit(main(sys.argv[1:]))

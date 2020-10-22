@@ -10,3 +10,11 @@ from the copying, the only additional work done on the text representation was f
 As a result, the libretto format started off pretty loose, and time constraints led to some shortcuts
 out of necessity.  Future work will include formalizing the libretto format and making more robust
 formatting control available to the output.
+
+## Use
+
+Libretto is implemented as modules, so to run the html converter, it should be called as
+
+```
+python3 -m src.lib2html <libretto source file>
+```
